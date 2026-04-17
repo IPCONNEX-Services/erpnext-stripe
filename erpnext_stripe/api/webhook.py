@@ -73,7 +73,10 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
 
     intent = event["data"]["object"]
     intent_id = intent["id"]
-    error = intent.get("last_payment_error") or {}
+    # v15 SDK: last_payment_error is a StripeObject — use getattr, not .get()
+    raw_error = getattr(intent, "last_payment_error", None)
+    error_code = getattr(raw_error, "code", None) if raw_error else None
+    error_message = getattr(raw_error, "message", None) if raw_error else None
 
     log = _get_log_by_intent(intent_id)
     if not log or log.status == "succeeded":
@@ -87,8 +90,8 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
     if next_attempt > max_attempts:
         frappe.db.set_value("Stripe Payment Log", log.name, {
             "status": "failed",
-            "stripe_error_code": error.get("code"),
-            "stripe_error_message": error.get("message"),
+            "stripe_error_code": error_code,
+            "stripe_error_message": error_message,
             "event_data": json.dumps(event),
         })
         _notify_failure(log, schedule, final=True)
@@ -99,8 +102,8 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
 
     frappe.db.set_value("Stripe Payment Log", log.name, {
         "status": "failed",
-        "stripe_error_code": error.get("code"),
-        "stripe_error_message": error.get("message"),
+        "stripe_error_code": error_code,
+        "stripe_error_message": error_message,
         "next_retry_at": next_retry_at,
         "event_data": json.dumps(event),
     })
@@ -110,8 +113,8 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
 
 def _handle_setup_succeeded(event: dict, stripe_settings: str):
     setup_intent = event["data"]["object"]
-    stripe_customer_id = setup_intent.get("customer")
-    pm_id = setup_intent.get("payment_method")
+    stripe_customer_id = getattr(setup_intent, "customer", None)
+    pm_id = getattr(setup_intent, "payment_method", None)
 
     if not stripe_customer_id or not pm_id:
         return

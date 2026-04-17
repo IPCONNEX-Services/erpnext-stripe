@@ -55,8 +55,8 @@ def _match_customer(stripe_cus) -> str | None:
     if existing:
         return existing
 
-    # 2. Match by metadata.erpnext_customer
-    meta_name = (stripe_cus.metadata or {}).get("erpnext_customer")
+    # 2. Match by metadata.erpnext_customer (v15 SDK: use getattr, not .get())
+    meta_name = getattr(stripe_cus.metadata, "erpnext_customer", None) if stripe_cus.metadata else None
     if meta_name and frappe.db.exists("Customer", meta_name):
         return meta_name
 
@@ -104,7 +104,8 @@ def _upsert_stripe_customer(stripe_cus, erpnext_customer: str | None, stripe_set
 
     # Sync payment methods
     pms = stripe.PaymentMethod.list(customer=stripe_cus.id, type="card")
-    default_pm_id = (stripe_cus.get("invoice_settings") or {}).get("default_payment_method")
+    invoice_settings = getattr(stripe_cus, "invoice_settings", None)
+    default_pm_id = getattr(invoice_settings, "default_payment_method", None) if invoice_settings else None
 
     existing_pm_ids = {pm.stripe_pm_id for pm in doc.payment_methods}
     for pm_data in pms.data:

@@ -30,12 +30,12 @@ class StripeCustomer(Document):
                     },
                 )
 
-        # Mark default from Stripe customer default_source / invoice_settings
+        # Mark default from Stripe customer default_source / invoice_settings (v15 SDK: use getattr)
         stripe_cus = stripe.Customer.retrieve(self.stripe_customer_id)
+        invoice_settings = getattr(stripe_cus, "invoice_settings", None)
         default_pm_id = (
-            stripe_cus.get("invoice_settings", {}).get("default_payment_method")
-            or stripe_cus.get("default_source")
-        )
+            getattr(invoice_settings, "default_payment_method", None) if invoice_settings else None
+        ) or getattr(stripe_cus, "default_source", None)
         if default_pm_id:
             for pm in self.payment_methods:
                 pm.is_default = 1 if pm.stripe_pm_id == default_pm_id else 0
