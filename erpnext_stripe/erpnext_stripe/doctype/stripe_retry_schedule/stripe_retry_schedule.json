@@ -1,0 +1,87 @@
+{
+  "actions": [],
+  "creation": "2026-04-17 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "company",
+    "column_break_1",
+    "max_attempts",
+    "notify_customer_after_attempt",
+    "section_delays",
+    "attempt_1_delay_hours",
+    "attempt_2_delay_hours",
+    "attempt_3_delay_hours"
+  ],
+  "fields": [
+    {
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "label": "Company",
+      "options": "Company",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "max_attempts",
+      "fieldtype": "Int",
+      "label": "Max Attempts",
+      "default": 3,
+      "reqd": 1
+    },
+    {
+      "fieldname": "notify_customer_after_attempt",
+      "fieldtype": "Int",
+      "label": "Email Customer After Attempt #",
+      "default": 2,
+      "description": "Send failure email to customer after this many failed attempts"
+    },
+    {
+      "fieldname": "section_delays",
+      "fieldtype": "Section Break",
+      "label": "Retry Delays"
+    },
+    {
+      "fieldname": "attempt_1_delay_hours",
+      "fieldtype": "Int",
+      "label": "Delay Before Attempt 2 (hours)",
+      "default": 24
+    },
+    {
+      "fieldname": "attempt_2_delay_hours",
+      "fieldtype": "Int",
+      "label": "Delay Before Attempt 3 (hours)",
+      "default": 72
+    },
+    {
+      "fieldname": "attempt_3_delay_hours",
+      "fieldtype": "Int",
+      "label": "Delay Before Attempt 4 (hours)",
+      "default": 168,
+      "description": "Only used if max_attempts > 3"
+    }
+  ],
+  "links": [],
+  "modified": "2026-04-17 00:00:00",
+  "modified_by": "Administrator",
+  "module": "Stripe Payments",
+  "name": "Stripe Retry Schedule",
+  "naming_rule": "By fieldname",
+  "autoname": "field:company",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC"
+}

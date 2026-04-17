@@ -1,0 +1,71 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Add Payment Card{% endblock %}
+
+{% block page_content %}
+<div class="container" style="max-width: 480px; margin-top: 60px;">
+	<div class="card shadow-sm">
+		<div class="card-body p-4">
+			<h4 class="mb-1">Add Payment Card</h4>
+			{% if customer_name %}
+			<p class="text-muted mb-4">{{ customer_name }}</p>
+			{% endif %}
+
+			<div id="stripe-element-container">
+				<div id="payment-element"></div>
+				<div id="stripe-error" class="text-danger mt-2" style="display:none;"></div>
+				<button id="submit-btn" class="btn btn-primary w-100 mt-3">
+					Save Card
+				</button>
+			</div>
+
+			<div id="stripe-success" style="display:none;" class="text-center py-4">
+				<div class="text-success" style="font-size: 48px;">&#10003;</div>
+				<h5 class="mt-2">Card saved successfully</h5>
+				<p class="text-muted">You can close this window.</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+(function () {
+	const publishableKey = {{ publishable_key | tojson }};
+	const clientSecret = {{ client_secret | tojson }};
+
+	const stripe = Stripe(publishableKey);
+	const elements = stripe.elements({ clientSecret });
+
+	const paymentElement = elements.create("payment");
+	paymentElement.mount("#payment-element");
+
+	document.getElementById("submit-btn").addEventListener("click", async () => {
+		const btn = document.getElementById("submit-btn");
+		const errorDiv = document.getElementById("stripe-error");
+
+		btn.disabled = true;
+		btn.textContent = "Saving...";
+		errorDiv.style.display = "none";
+
+		const { error } = await stripe.confirmSetup({
+			elements,
+			confirmParams: {
+				return_url: window.location.href + "&confirmed=1",
+			},
+			redirect: "if_required",
+		});
+
+		if (error) {
+			errorDiv.textContent = error.message;
+			errorDiv.style.display = "block";
+			btn.disabled = false;
+			btn.textContent = "Save Card";
+		} else {
+			document.getElementById("stripe-element-container").style.display = "none";
+			document.getElementById("stripe-success").style.display = "block";
+		}
+	});
+})();
+</script>
+{% endblock %}

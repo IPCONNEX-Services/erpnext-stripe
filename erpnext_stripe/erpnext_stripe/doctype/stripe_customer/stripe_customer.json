@@ -1,0 +1,101 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-04-17 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "customer",
+    "stripe_settings",
+    "stripe_customer_id",
+    "synced_at",
+    "unmatched_flag",
+    "section_cards",
+    "payment_methods"
+  ],
+  "fields": [
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "in_list_view": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "stripe_settings",
+      "fieldtype": "Link",
+      "label": "Stripe Settings",
+      "options": "Stripe Settings",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "stripe_customer_id",
+      "fieldtype": "Data",
+      "label": "Stripe Customer ID",
+      "reqd": 1,
+      "in_list_view": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "synced_at",
+      "fieldtype": "Datetime",
+      "label": "Last Synced At",
+      "read_only": 1
+    },
+    {
+      "fieldname": "unmatched_flag",
+      "fieldtype": "Check",
+      "label": "Unmatched (needs review)",
+      "description": "Set when sync cannot find a matching ERPNext customer"
+    },
+    {
+      "fieldname": "section_cards",
+      "fieldtype": "Section Break",
+      "label": "Payment Methods"
+    },
+    {
+      "fieldname": "payment_methods",
+      "fieldtype": "Table",
+      "label": "Payment Methods",
+      "options": "Stripe Payment Method",
+      "read_only": 1
+    }
+  ],
+  "links": [],
+  "modified": "2026-04-17 00:00:00",
+  "modified_by": "Administrator",
+  "module": "Stripe Payments",
+  "name": "Stripe Customer",
+  "naming_rule": "By fieldname",
+  "autoname": "field:stripe_customer_id",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Accounts Manager"
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Accounts User"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

@@ -1,0 +1,175 @@
+{
+  "actions": [],
+  "allow_import": 0,
+  "creation": "2026-04-17 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "sales_invoice",
+    "stripe_customer",
+    "stripe_settings",
+    "triggered_by",
+    "column_break_1",
+    "status",
+    "attempt_number",
+    "next_retry_at",
+    "payment_entry",
+    "section_stripe",
+    "stripe_payment_intent_id",
+    "stripe_pm_id",
+    "amount",
+    "currency",
+    "section_error",
+    "stripe_error_code",
+    "stripe_error_message",
+    "section_raw",
+    "event_data"
+  ],
+  "fields": [
+    {
+      "fieldname": "sales_invoice",
+      "fieldtype": "Link",
+      "label": "Sales Invoice",
+      "options": "Sales Invoice",
+      "in_list_view": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "stripe_customer",
+      "fieldtype": "Link",
+      "label": "Stripe Customer",
+      "options": "Stripe Customer",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "stripe_settings",
+      "fieldtype": "Link",
+      "label": "Stripe Settings",
+      "options": "Stripe Settings",
+      "reqd": 1
+    },
+    {
+      "fieldname": "triggered_by",
+      "fieldtype": "Select",
+      "label": "Triggered By",
+      "options": "scheduler\ncustomer_portal\nmanual\nwebhook",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "pending\nprocessing\nsucceeded\nfailed\ncancelled",
+      "default": "pending",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "attempt_number",
+      "fieldtype": "Int",
+      "label": "Attempt #",
+      "default": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "next_retry_at",
+      "fieldtype": "Datetime",
+      "label": "Next Retry At"
+    },
+    {
+      "fieldname": "payment_entry",
+      "fieldtype": "Link",
+      "label": "Payment Entry",
+      "options": "Payment Entry",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_stripe",
+      "fieldtype": "Section Break",
+      "label": "Stripe Details"
+    },
+    {
+      "fieldname": "stripe_payment_intent_id",
+      "fieldtype": "Data",
+      "label": "Payment Intent ID",
+      "search_index": 1
+    },
+    {
+      "fieldname": "stripe_pm_id",
+      "fieldtype": "Data",
+      "label": "Payment Method ID"
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "Amount"
+    },
+    {
+      "fieldname": "currency",
+      "fieldtype": "Link",
+      "label": "Currency",
+      "options": "Currency"
+    },
+    {
+      "fieldname": "section_error",
+      "fieldtype": "Section Break",
+      "label": "Error Details",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "stripe_error_code",
+      "fieldtype": "Data",
+      "label": "Error Code"
+    },
+    {
+      "fieldname": "stripe_error_message",
+      "fieldtype": "Small Text",
+      "label": "Error Message"
+    },
+    {
+      "fieldname": "section_raw",
+      "fieldtype": "Section Break",
+      "label": "Raw Event",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "event_data",
+      "fieldtype": "JSON",
+      "label": "Event Data"
+    }
+  ],
+  "links": [],
+  "modified": "2026-04-17 00:00:00",
+  "modified_by": "Administrator",
+  "module": "Stripe Payments",
+  "name": "Stripe Payment Log",
+  "naming_rule": "Random",
+  "autoname": "hash",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Accounts Manager"
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Accounts User"
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "track_changes": 0
+}

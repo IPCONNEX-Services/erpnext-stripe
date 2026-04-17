@@ -1,0 +1,64 @@
+{
+  "actions": [],
+  "creation": "2026-04-17 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "istable": 1,
+  "field_order": [
+    "stripe_pm_id",
+    "brand",
+    "last4",
+    "exp_month",
+    "exp_year",
+    "is_default"
+  ],
+  "fields": [
+    {
+      "fieldname": "stripe_pm_id",
+      "fieldtype": "Data",
+      "label": "Stripe PM ID",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "brand",
+      "fieldtype": "Data",
+      "label": "Brand",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "last4",
+      "fieldtype": "Data",
+      "label": "Last 4",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "exp_month",
+      "fieldtype": "Int",
+      "label": "Exp Month",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "exp_year",
+      "fieldtype": "Int",
+      "label": "Exp Year",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "is_default",
+      "fieldtype": "Check",
+      "label": "Default",
+      "in_list_view": 1
+    }
+  ],
+  "modified": "2026-04-17 00:00:00",
+  "modified_by": "Administrator",
+  "module": "Stripe Payments",
+  "name": "Stripe Payment Method",
+  "owner": "Administrator",
+  "permissions": []
+}

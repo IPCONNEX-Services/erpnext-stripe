@@ -1,0 +1,125 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-04-17 00:00:00",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "company",
+    "mode",
+    "is_default",
+    "column_break_1",
+    "publishable_key",
+    "secret_key",
+    "webhook_secret",
+    "section_payment_trigger",
+    "default_payment_trigger",
+    "payment_trigger_days",
+    "section_sync",
+    "last_synced_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "label": "Company",
+      "options": "Company",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "mode",
+      "fieldtype": "Select",
+      "label": "Mode",
+      "options": "Test\nProduction",
+      "default": "Test",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "is_default",
+      "fieldtype": "Check",
+      "label": "Is Default",
+      "description": "One default per company per mode"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "publishable_key",
+      "fieldtype": "Data",
+      "label": "Publishable Key",
+      "reqd": 1,
+      "description": "pk_test_... or pk_live_..."
+    },
+    {
+      "fieldname": "secret_key",
+      "fieldtype": "Password",
+      "label": "Secret Key",
+      "reqd": 1,
+      "description": "sk_test_... or sk_live_..."
+    },
+    {
+      "fieldname": "webhook_secret",
+      "fieldtype": "Password",
+      "label": "Webhook Signing Secret",
+      "description": "whsec_... from your Stripe webhook endpoint"
+    },
+    {
+      "fieldname": "section_payment_trigger",
+      "fieldtype": "Section Break",
+      "label": "Payment Trigger"
+    },
+    {
+      "fieldname": "default_payment_trigger",
+      "fieldtype": "Select",
+      "label": "Default Payment Trigger",
+      "options": "On Invoice Submission\nOn Due Date\nAfter X Days\nManual Only",
+      "default": "Manual Only"
+    },
+    {
+      "fieldname": "payment_trigger_days",
+      "fieldtype": "Int",
+      "label": "Days After Due Date",
+      "description": "Used when trigger is 'After X Days'",
+      "default": 0
+    },
+    {
+      "fieldname": "section_sync",
+      "fieldtype": "Section Break",
+      "label": "Sync"
+    },
+    {
+      "fieldname": "last_synced_at",
+      "fieldtype": "Datetime",
+      "label": "Last Synced At",
+      "read_only": 1
+    }
+  ],
+  "links": [],
+  "modified": "2026-04-17 00:00:00",
+  "modified_by": "Administrator",
+  "module": "Stripe Payments",
+  "name": "Stripe Settings",
+  "naming_rule": "By fieldname",
+  "autoname": "field:name",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}
