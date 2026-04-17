@@ -68,6 +68,7 @@ def charge_invoice(sales_invoice: str, stripe_settings: str = None) -> dict:
     log.attempt_number = attempt_number
     log.triggered_by = "manual"
     log.insert(ignore_permissions=True)
+    frappe.db.commit()
 
     return {"log": log.name, "intent_id": intent.id, "status": intent.status}
 
@@ -111,6 +112,7 @@ def create_payment_intent_for_portal(sales_invoice: str) -> dict:
     log.attempt_number = 1
     log.triggered_by = "customer_portal"
     log.insert(ignore_permissions=True)
+    frappe.db.commit()
 
     settings_doc = frappe.get_doc("Stripe Settings", stripe_settings)
     return {
