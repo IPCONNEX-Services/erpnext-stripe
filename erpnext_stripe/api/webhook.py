@@ -181,7 +181,7 @@ def _notify_failure(log, schedule, final: bool):
     desk_alert(
         title=f"Payment failed for {log.sales_invoice} (attempt {log.attempt_number})",
         message=f"Error: {log.stripe_error_message or log.stripe_error_code}. "
-                + ("No more retries." if final else f"Next retry scheduled."),
+                + ("No more retries." if final else "Next retry scheduled."),
         doc_type="Stripe Payment Log",
         doc_name=log.name,
     )

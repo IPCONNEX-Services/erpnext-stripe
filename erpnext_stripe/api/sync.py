@@ -1,5 +1,4 @@
 import frappe
-from frappe import _
 
 
 @frappe.whitelist()
@@ -11,7 +10,6 @@ def sync_from_stripe(stripe_settings: str) -> dict:
     from erpnext_stripe.utils.stripe_client import get_stripe_client
 
     stripe = get_stripe_client(stripe_settings)
-    settings = frappe.get_doc("Stripe Settings", stripe_settings)
 
     matched = 0
     unmatched = 0

@@ -1,5 +1,4 @@
 import frappe
-from frappe import _
 
 from erpnext_stripe.utils.stripe_client import get_stripe_client
 
