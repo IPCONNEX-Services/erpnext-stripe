@@ -5,6 +5,7 @@
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
+    "settings_name",
     "company",
     "mode",
     "is_default",
@@ -19,6 +20,14 @@
     "last_synced_at"
   ],
   "fields": [
+    {
+      "fieldname": "settings_name",
+      "fieldtype": "Data",
+      "label": "Settings Name",
+      "reqd": 1,
+      "in_list_view": 1,
+      "description": "e.g. IPCONNEX - Stripe Prod"
+    },
     {
       "fieldname": "company",
       "fieldtype": "Link",
@@ -103,7 +112,7 @@
   "module": "Stripe Payments",
   "name": "Stripe Settings",
   "naming_rule": "By fieldname",
-  "autoname": "field:name",
+  "autoname": "field:settings_name",
   "owner": "Administrator",
   "permissions": [
     {
