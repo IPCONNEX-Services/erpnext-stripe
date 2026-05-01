@@ -9,6 +9,7 @@ A Frappe/ERPNext app for full Stripe payment integration — multi-company, PCI-
 - **Card management:** list, add, remove, and set default cards per customer via Stripe's hosted Payment Element (PCI-compliant — no raw card data touches your server)
 - **Flexible payment triggers:** company-level policy (on submission, on due date, after X days, or manual) with per-customer override
 - **Manual charge controls:** "Charge via Stripe" button on any unpaid Sales Invoice; "Process Pending Invoices" on the Customer form to bulk-charge all outstanding invoices
+- **Invoice activity trail:** every Stripe payment event (initiated, succeeded, failed, retried) is logged as a comment on the Sales Invoice timeline
 - **Retry scheduling:** configurable retry delays (default 24h / 72h / 7d) with desk + customer email notifications
 - **Customer portal:** add/manage cards from ERPNext's `/me` portal
 - **Email card invite:** send a time-limited setup link to a customer to add their card

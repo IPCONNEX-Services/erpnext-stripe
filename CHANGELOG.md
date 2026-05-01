@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.0 — 2026-05-01
+### Added
+- **Sales Invoice activity trail** — timeline comments added at every Stripe payment lifecycle event: charge initiated (intent ID, amount, attempt number), bulk queue via Process Pending Invoices (with triggering user), payment succeeded (amount + Payment Entry link), payment failed (error message, attempt number, next retry time or final failure notice)
+
 ## v1.1.0 — 2026-05-01
 ### Added
 - **Per-customer payment trigger override** — each Stripe Customer record can now override the company-level trigger with its own policy (Use Company Default / On Invoice Submission / On Due Date / After X Days / Manual Only), including a customer-specific "days after due date" value
