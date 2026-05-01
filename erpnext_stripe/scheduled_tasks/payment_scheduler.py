@@ -1,30 +1,22 @@
 import frappe
-from frappe.utils import now
+from frappe.utils import add_days, getdate, now, today
 
 
 def run_due_payments():
     """
-    Called hourly. Charges invoices whose payment trigger condition is met
-    and which have no succeeded Stripe Payment Log.
+    Called hourly. For each company's default Stripe Settings, fetch all candidate
+    invoices and charge those whose effective trigger (company or customer-level) is met.
     """
     settings_list = frappe.get_all(
         "Stripe Settings",
-        filters={"is_default": 1, "default_payment_trigger": ["!=", "Manual Only"]},
+        filters={"is_default": 1},
         fields=["name", "company", "default_payment_trigger", "payment_trigger_days"],
     )
 
     for settings in settings_list:
-        invoices = _get_due_invoices(settings)
-        for inv_name in invoices:
-            frappe.enqueue(
-                "erpnext_stripe.api.payment_intent.charge_invoice",
-                sales_invoice=inv_name,
-                stripe_settings=settings.name,
-                queue="default",
-                now=False,
-                job_id=f"stripe_charge_{inv_name}",
-                deduplicate=True,
-            )
+        candidates = _get_candidate_invoices(settings)
+        for inv in candidates:
+            _maybe_enqueue(inv, settings)
 
 
 def process_retries():
@@ -56,7 +48,7 @@ def _retry_payment(log_name: str):
 
     log = frappe.get_doc("Stripe Payment Log", log_name)
     if log.status != "failed":
-        return  # Already resolved
+        return
 
     charge_invoice(
         sales_invoice=log.sales_invoice,
@@ -64,35 +56,59 @@ def _retry_payment(log_name: str):
     )
 
 
-def _get_due_invoices(settings: dict) -> list[str]:
-    """Return invoice names that match the payment trigger for the given Stripe Settings."""
-    from frappe.utils import add_days, today
+def _maybe_enqueue(inv: dict, settings: dict):
+    """Charge inv if its effective trigger condition is met."""
+    from erpnext_stripe.utils.stripe_client import get_stripe_customer
 
-    base_filters = {
-        "company": settings.company,
-        "docstatus": 1,
-        "outstanding_amount": [">", 0],
-        "status": ["not in", ["Paid", "Cancelled", "Return"]],
-    }
+    sc = get_stripe_customer(inv.customer, settings.name)
+    if not sc or not sc.get_default_payment_method():
+        return
 
+    trigger, days = sc.get_effective_trigger()
+
+    if trigger in ("Manual Only", "On Invoice Submission"):
+        return
+
+    due = getdate(inv.due_date)
+
+    if trigger == "On Due Date":
+        if due > getdate(today()):
+            return
+    elif trigger == "After X Days":
+        cutoff = getdate(add_days(today(), -days))
+        if due > cutoff:
+            return
+
+    frappe.enqueue(
+        "erpnext_stripe.api.payment_intent.charge_invoice",
+        sales_invoice=inv.name,
+        stripe_settings=settings.name,
+        queue="default",
+        now=False,
+        job_id=f"stripe_charge_{inv.name}",
+        deduplicate=True,
+    )
+
+
+def _get_candidate_invoices(settings: dict) -> list:
+    """Return all submitted, outstanding, not-yet-charged invoices for this company."""
     already_charged = frappe.db.get_all(
         "Stripe Payment Log",
         filters={"status": ["in", ["succeeded", "processing"]]},
         pluck="sales_invoice",
     )
+
+    filters = {
+        "company": settings.company,
+        "docstatus": 1,
+        "outstanding_amount": [">", 0],
+        "status": ["not in", ["Paid", "Cancelled", "Return"]],
+    }
     if already_charged:
-        base_filters["name"] = ["not in", already_charged]
+        filters["name"] = ["not in", already_charged]
 
-    trigger = settings.default_payment_trigger
-
-    if trigger == "On Due Date":
-        base_filters["due_date"] = ["<=", today()]
-
-    elif trigger == "After X Days":
-        days = settings.payment_trigger_days or 0
-        cutoff = add_days(today(), -days)
-        base_filters["due_date"] = ["<=", cutoff]
-
-    # "On Invoice Submission" is handled by the on_submit hook, not here
-
-    return frappe.db.get_all("Sales Invoice", filters=base_filters, pluck="name")
+    return frappe.db.get_all(
+        "Sales Invoice",
+        filters=filters,
+        fields=["name", "customer", "due_date"],
+    )

@@ -74,6 +74,53 @@ def charge_invoice(sales_invoice: str, stripe_settings: str = None) -> dict:
 
 
 @frappe.whitelist()
+def process_pending_invoices(customer: str, stripe_settings: str) -> dict:
+    """
+    Enqueue charges for all submitted, outstanding Sales Invoices for a customer.
+    Returns the count and names of invoices enqueued.
+    """
+    sc = get_stripe_customer(customer, stripe_settings)
+    if not sc:
+        frappe.throw(_(f"No Stripe customer found for '{customer}'."))
+
+    if not sc.get_default_payment_method():
+        frappe.throw(_(f"No default payment method for customer '{customer}'. Please add a card first."))
+
+    settings = frappe.get_doc("Stripe Settings", stripe_settings)
+
+    already_charged = frappe.db.get_all(
+        "Stripe Payment Log",
+        filters={"status": ["in", ["succeeded", "processing"]]},
+        pluck="sales_invoice",
+    )
+
+    filters = {
+        "customer": customer,
+        "company": settings.company,
+        "docstatus": 1,
+        "outstanding_amount": [">", 0],
+        "status": ["not in", ["Paid", "Cancelled", "Return"]],
+    }
+    if already_charged:
+        filters["name"] = ["not in", already_charged]
+
+    invoices = frappe.db.get_all("Sales Invoice", filters=filters, pluck="name")
+
+    for inv_name in invoices:
+        frappe.enqueue(
+            "erpnext_stripe.api.payment_intent.charge_invoice",
+            sales_invoice=inv_name,
+            stripe_settings=stripe_settings,
+            queue="default",
+            now=False,
+            job_id=f"stripe_charge_{inv_name}",
+            deduplicate=True,
+        )
+
+    return {"enqueued": len(invoices), "invoices": invoices}
+
+
+@frappe.whitelist()
 def create_payment_intent_for_portal(sales_invoice: str) -> dict:
     """
     Create a PaymentIntent for customer-initiated payment via the portal.
@@ -81,7 +128,6 @@ def create_payment_intent_for_portal(sales_invoice: str) -> dict:
     """
     invoice = frappe.get_doc("Sales Invoice", sales_invoice)
 
-    # Verify requesting user is the customer
     customer = frappe.db.get_value("Customer", {"email_id": frappe.session.user}, "name")
     if invoice.customer != customer:
         frappe.throw(_("Not authorized"), frappe.PermissionError)
@@ -124,15 +170,14 @@ def create_payment_intent_for_portal(sales_invoice: str) -> dict:
 def on_invoice_submit(doc, method):
     """
     Hook called on Sales Invoice submit.
-    Sends card setup email if customer has no default card and trigger is configured.
-    Also auto-charges if trigger is 'On Invoice Submission'.
+    Sends card setup email if customer has no default card.
+    Auto-charges if the effective trigger (customer or company) is 'On Invoice Submission'.
     """
     try:
         stripe_settings_name = get_default_stripe_settings(doc.company, mode="Production")
     except Exception:
-        return  # No Stripe configured for this company
+        return
 
-    settings = frappe.get_doc("Stripe Settings", stripe_settings_name)
     sc = get_stripe_customer(doc.customer, stripe_settings_name)
 
     if not sc or not sc.get_default_payment_method():
@@ -140,10 +185,11 @@ def on_invoice_submit(doc, method):
         try:
             send_card_setup_email(doc.customer, stripe_settings_name)
         except Exception:
-            pass  # Don't fail submission if email fails
+            pass
         return
 
-    if settings.default_payment_trigger == "On Invoice Submission":
+    trigger, _ = sc.get_effective_trigger()
+    if trigger == "On Invoice Submission":
         frappe.enqueue(
             "erpnext_stripe.api.payment_intent.charge_invoice",
             sales_invoice=doc.name,

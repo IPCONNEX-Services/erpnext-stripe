@@ -69,23 +69,35 @@ function _render_stripe_cards(frm, records) {
 	}, __("Stripe"));
 
 	frm.add_custom_button(__("Send Card Setup Link"), () => {
-		const settings_options = records.map((r) => r.stripe_settings);
-		if (settings_options.length === 1) {
-			_send_card_setup_email(frm.doc.name, settings_options[0]);
-		} else {
-			frappe.prompt(
-				[{
-					fieldname: "stripe_settings",
-					fieldtype: "Select",
-					label: __("Stripe Account"),
-					options: settings_options.join("\n"),
-					reqd: 1,
-				}],
-				(values) => _send_card_setup_email(frm.doc.name, values.stripe_settings),
-				__("Select Stripe Account")
-			);
-		}
+		_with_settings_selection(records, (stripe_settings) => {
+			_send_card_setup_email(frm.doc.name, stripe_settings);
+		});
 	}, __("Stripe"));
+
+	frm.add_custom_button(__("Process Pending Invoices"), () => {
+		_with_settings_selection(records, (stripe_settings) => {
+			_process_pending_invoices(frm.doc.name, stripe_settings);
+		});
+	}, __("Stripe"));
+}
+
+function _with_settings_selection(records, callback) {
+	const options = records.map((r) => r.stripe_settings);
+	if (options.length === 1) {
+		callback(options[0]);
+	} else {
+		frappe.prompt(
+			[{
+				fieldname: "stripe_settings",
+				fieldtype: "Select",
+				label: __("Stripe Account"),
+				options: options.join("\n"),
+				reqd: 1,
+			}],
+			(values) => callback(values.stripe_settings),
+			__("Select Stripe Account")
+		);
+	}
 }
 
 function _send_card_setup_email(customer, stripe_settings) {
@@ -97,6 +109,31 @@ function _send_card_setup_email(customer, stripe_settings) {
 				args: { customer, stripe_settings },
 				callback() {
 					frappe.show_alert({ message: __("Card setup email sent"), indicator: "green" });
+				},
+			});
+		}
+	);
+}
+
+function _process_pending_invoices(customer, stripe_settings) {
+	frappe.confirm(
+		__("Charge all outstanding invoices for this customer via Stripe?"),
+		() => {
+			frappe.call({
+				method: "erpnext_stripe.api.payment_intent.process_pending_invoices",
+				args: { customer, stripe_settings },
+				callback(r) {
+					if (r.message) {
+						const count = r.message.enqueued;
+						if (count === 0) {
+							frappe.show_alert({ message: __("No outstanding invoices to charge"), indicator: "blue" });
+						} else {
+							frappe.show_alert({
+								message: __("{0} invoice(s) queued for payment", [count]),
+								indicator: "green",
+							});
+						}
+					}
 				},
 			});
 		}

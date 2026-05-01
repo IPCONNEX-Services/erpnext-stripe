@@ -22,6 +22,7 @@ web_include_js = []
 # DocType JS overrides for Customer form dashboard
 doctype_js = {
     "Customer": "public/js/customer_stripe_dashboard.js",
+    "Sales Invoice": "public/js/sales_invoice_stripe.js",
 }
 
 # On Sales Invoice submit — send card invite if no default card

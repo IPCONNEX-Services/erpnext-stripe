@@ -3,6 +3,14 @@ from frappe.model.document import Document
 
 
 class StripeCustomer(Document):
+    def get_effective_trigger(self) -> tuple:
+        """Return (trigger, days) for this customer, respecting the override."""
+        override = self.payment_trigger_override
+        if override and override != "Use Company Default":
+            return override, self.payment_trigger_days_override or 0
+        settings = frappe.get_doc("Stripe Settings", self.stripe_settings)
+        return settings.default_payment_trigger or "Manual Only", settings.payment_trigger_days or 0
+
     def get_default_payment_method(self):
         for pm in self.payment_methods:
             if pm.is_default:
