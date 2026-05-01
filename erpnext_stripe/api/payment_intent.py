@@ -68,6 +68,13 @@ def charge_invoice(sales_invoice: str, stripe_settings: str = None) -> dict:
     log.attempt_number = attempt_number
     log.triggered_by = "manual"
     log.insert(ignore_permissions=True)
+
+    invoice.add_comment(
+        "Comment",
+        f"Stripe charge initiated — {currency.upper()} {invoice.outstanding_amount} "
+        f"| Intent: {intent.id} | Attempt #{attempt_number}",
+    )
+
     frappe.db.commit()
 
     return {"log": log.name, "intent_id": intent.id, "status": intent.status}
@@ -106,6 +113,7 @@ def process_pending_invoices(customer: str, stripe_settings: str) -> dict:
 
     invoices = frappe.db.get_all("Sales Invoice", filters=filters, pluck="name")
 
+    triggered_by = frappe.session.user
     for inv_name in invoices:
         frappe.enqueue(
             "erpnext_stripe.api.payment_intent.charge_invoice",
@@ -115,6 +123,10 @@ def process_pending_invoices(customer: str, stripe_settings: str) -> dict:
             now=False,
             job_id=f"stripe_charge_{inv_name}",
             deduplicate=True,
+        )
+        frappe.get_doc("Sales Invoice", inv_name).add_comment(
+            "Comment",
+            f"Stripe payment queued via Process Pending Invoices by {triggered_by}",
         )
 
     return {"enqueued": len(invoices), "invoices": invoices}

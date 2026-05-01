@@ -60,6 +60,11 @@ def _handle_payment_succeeded(event: dict, stripe_settings: str):
         "event_data": json.dumps(event),
     })
 
+    frappe.get_doc("Sales Invoice", log.sales_invoice).add_comment(
+        "Comment",
+        f"Stripe payment succeeded — {amount_received} | Payment Entry: {pe_name}",
+    )
+
     desk_alert(
         title=f"Payment received for {log.sales_invoice}",
         message=f"Stripe payment of {amount_received} succeeded. Payment Entry: {pe_name}",
@@ -94,6 +99,11 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
             "stripe_error_message": error_message,
             "event_data": json.dumps(event),
         })
+        frappe.get_doc("Sales Invoice", log.sales_invoice).add_comment(
+            "Comment",
+            f"Stripe payment failed (attempt #{log.attempt_number}) — "
+            f"{error_message or error_code}. No more retries.",
+        )
         _notify_failure(log, schedule, final=True)
         return
 
@@ -107,6 +117,12 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
         "next_retry_at": next_retry_at,
         "event_data": json.dumps(event),
     })
+
+    frappe.get_doc("Sales Invoice", log.sales_invoice).add_comment(
+        "Comment",
+        f"Stripe payment failed (attempt #{log.attempt_number}) — "
+        f"{error_message or error_code}. Next retry: {next_retry_at}.",
+    )
 
     _notify_failure(log, schedule, final=False)
 
