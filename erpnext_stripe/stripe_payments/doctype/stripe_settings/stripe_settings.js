@@ -26,5 +26,22 @@ frappe.ui.form.on("Stripe Settings", {
 				}
 			);
 		}, __("Actions"));
+
+		frm.add_custom_button(__("Sync Payouts Now"), () => {
+			frappe.confirm(
+				__("Pull all unimported Stripe payouts since last sync and enqueue per-payout JE creation. Continue?"),
+				() => {
+					frm.call("sync_payouts_now").then((r) => {
+						if (r.message && typeof r.message.enqueued === "number") {
+							frappe.show_alert({
+								message: __("Enqueued {0} payout(s) (scanned {1}).",
+									[r.message.enqueued, r.message.scanned]),
+								indicator: "green",
+							}, 7);
+						}
+					});
+				}
+			);
+		}, __("Actions"));
 	},
 });

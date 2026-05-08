@@ -13,7 +13,13 @@ scheduler_events = {
     "hourly": [
         "erpnext_stripe.scheduled_tasks.payment_scheduler.run_due_payments",
         "erpnext_stripe.scheduled_tasks.payment_scheduler.process_retries",
-    ]
+    ],
+    "cron": {
+        # Daily 2:30am Montreal — offset from Pax8 (1:00) and OVH (1:30)
+        "30 2 * * *": [
+            "erpnext_stripe.scheduled_tasks.payout_scheduler.run_if_due",
+        ],
+    },
 }
 
 # Load Stripe.js only on pages that need it (portal card pages)
@@ -26,8 +32,13 @@ doctype_js = {
 }
 
 # On Sales Invoice submit — send card invite if no default card
-doc_events = {
-    "Sales Invoice": {
-        "on_submit": "erpnext_stripe.api.payment_intent.on_invoice_submit",
-    }
-}
+# DISABLED 2026-04-29 during v15→v16 recurring cutover (user direction). The hook
+# attempts get_default_stripe_settings, which uses frappe.throw and leaks an error
+# toast even when caught (upstream bug). With Stripe Settings is_default=0 on both
+# records, no auto-charge/email fires either way; commenting this out makes the
+# disable explicit and silences the toast. Re-enable when ready.
+# doc_events = {
+#     "Sales Invoice": {
+#         "on_submit": "erpnext_stripe.api.payment_intent.on_invoice_submit",
+#     }
+# }

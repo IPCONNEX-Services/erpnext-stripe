@@ -25,3 +25,9 @@ class StripeSettings(Document):
 
         stripe.api_key = self.get_password("secret_key")
         return stripe
+
+    @frappe.whitelist()
+    def sync_payouts_now(self):
+        """Manual trigger of the Stripe payout sync for this row."""
+        from erpnext_stripe.utils.sync_payouts import sync_payouts
+        return sync_payouts(self)
