@@ -4,7 +4,8 @@ from frappe.utils import add_days, getdate, now
 
 
 def sync_payouts(settings) -> dict:
-    """Fetch payouts since (last_synced - 7 days) for one Stripe Settings row, enqueue import_payout for each new one."""
+    """Fetch payouts since (last_synced - 7 days) for one Stripe Settings row,
+    enqueue import_payout for each payout that is not already completed or in-flight."""
     if not settings.payout_bank_account or not settings.payout_fee_account or not settings.payout_clearing_account:
         frappe.throw(
             f"Stripe Settings '{settings.name}' is missing payout account configuration. "
@@ -32,7 +33,8 @@ def sync_payouts(settings) -> dict:
 
     enqueued = 0
     for p in payouts:
-        if frappe.db.exists("Stripe Payout Log", {"payout_id": p.id, "status": "completed"}):
+        if frappe.db.exists("Stripe Payout Log",
+                            {"payout_id": p.id, "status": ["in", ["completed", "running"]]}):
             continue
         frappe.enqueue(
             "erpnext_stripe.api.import_payout.import_payout",

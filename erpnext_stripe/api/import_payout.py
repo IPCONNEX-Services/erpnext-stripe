@@ -69,6 +69,7 @@ def import_payout(payout_id: str, triggered_by: str = "manual", stripe_settings:
         from erpnext_stripe.utils.journal_builder import build_settlement_je
         je_dict = build_settlement_je(payout_dict, txn_dicts, settings)
         meta = je_dict.pop("_meta")
+        je_dict["currency"] = (payout.currency or "cad").upper()
 
         je = frappe.get_doc(je_dict)
         je.insert(ignore_permissions=True)
