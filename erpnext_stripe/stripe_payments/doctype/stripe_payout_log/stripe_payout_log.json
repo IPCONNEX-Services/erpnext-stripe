@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:STRIPE-PAYOUT-{YYYY}-{#####}",
+ "creation": "2026-05-07 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "payout_id", "arrival_date", "currency", "status", "triggered_by",
+  "journal_entry",
+  "totals_section", "gross_amount", "fee_amount", "net_amount", "txn_count",
+  "error_section", "error_log"
+ ],
+ "fields": [
+  {"fieldname": "payout_id", "label": "Stripe Payout ID", "fieldtype": "Data", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1, "unique": 1},
+  {"fieldname": "arrival_date", "label": "Arrival Date", "fieldtype": "Date", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "currency", "label": "Currency", "fieldtype": "Data", "default": "cad"},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select",
+   "options": "pending\nrunning\ncompleted\nfailed\nskipped_duplicate",
+   "default": "pending", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "triggered_by", "label": "Triggered By", "fieldtype": "Select",
+   "options": "scheduler\nmanual\nretry", "default": "manual"},
+  {"fieldname": "journal_entry", "label": "Journal Entry", "fieldtype": "Link", "options": "Journal Entry", "in_list_view": 1},
+  {"fieldname": "totals_section", "label": "Totals", "fieldtype": "Section Break"},
+  {"fieldname": "gross_amount", "label": "Gross Amount", "fieldtype": "Currency"},
+  {"fieldname": "fee_amount", "label": "Fee Amount", "fieldtype": "Currency"},
+  {"fieldname": "net_amount", "label": "Net Amount", "fieldtype": "Currency"},
+  {"fieldname": "txn_count", "label": "Txn Count", "fieldtype": "Int"},
+  {"fieldname": "error_section", "label": "Error", "fieldtype": "Section Break"},
+  {"fieldname": "error_log", "label": "Error Log", "fieldtype": "Long Text"}
+ ],
+ "links": [],
+ "modified": "2026-05-07 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Stripe Payments",
+ "name": "Stripe Payout Log",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "payout_id"
+}
