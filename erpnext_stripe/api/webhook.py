@@ -5,8 +5,15 @@ from frappe import _
 
 
 @frappe.whitelist(allow_guest=True)
-def handle():
-    """Single webhook endpoint for all Stripe events."""
+def handle(**kwargs):
+    """Single webhook endpoint for all Stripe events.
+
+    Runs unauthenticated (Stripe has no user session). We verify the Stripe
+    signature first; only after that passes do we elevate to Administrator so
+    routed handlers can write to Stripe Customer / Sales Invoice / Payment
+    Entry. **kwargs absorbs the JSON body fields Frappe auto-binds as
+    function kwargs for whitelisted methods.
+    """
     payload = frappe.request.data
     sig_header = frappe.request.headers.get("Stripe-Signature")
 
@@ -23,6 +30,9 @@ def handle():
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except stripe.error.SignatureVerificationError:
         frappe.throw(_("Invalid Stripe webhook signature"), frappe.PermissionError)
+
+    # Signature is valid -> elevate so routed handlers can write.
+    frappe.set_user("Administrator")
 
     event_type = event["type"]
     frappe.logger("erpnext_stripe").debug(f"Stripe webhook received: {event_type} ({event['id']})")

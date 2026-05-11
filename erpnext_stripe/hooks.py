@@ -19,6 +19,10 @@ scheduler_events = {
         "30 2 * * *": [
             "erpnext_stripe.scheduled_tasks.payout_scheduler.run_if_due",
         ],
+        # Every 10 minutes — safety net for failed webhook deliveries
+        "*/10 * * * *": [
+            "erpnext_stripe.scheduled_tasks.reconciler.reconcile_stuck_payments",
+        ],
     },
 }
 
