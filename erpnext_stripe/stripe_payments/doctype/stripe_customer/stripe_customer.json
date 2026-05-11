@@ -84,8 +84,7 @@
       "fieldname": "payment_methods",
       "fieldtype": "Table",
       "label": "Payment Methods",
-      "options": "Stripe Payment Method",
-      "read_only": 1
+      "options": "Stripe Payment Method"
     }
   ],
   "links": [],
