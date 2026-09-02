@@ -134,7 +134,15 @@ def get_customer_stripe_summary(customer: str) -> dict:
     records = frappe.get_all(
         "Stripe Customer",
         filters={"customer": customer},
-        fields=["name", "stripe_customer_id", "stripe_settings", "synced_at"],
+        fields=[
+            "name",
+            "stripe_customer_id",
+            "stripe_settings",
+            "synced_at",
+            "payment_trigger_override",
+            "payment_trigger_days_override",
+            "unmatched_flag",
+        ],
     )
 
     result = []

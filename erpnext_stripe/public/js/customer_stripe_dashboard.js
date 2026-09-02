@@ -40,17 +40,31 @@ function _render_stripe_cards(frm, records) {
 
 		const defaultPm = (rec.payment_methods || []).find((p) => p.is_default);
 		const cardLine = defaultPm
-			? `${defaultPm.brand.toUpperCase()} •••• ${defaultPm.last4} (${defaultPm.exp_month}/${defaultPm.exp_year})`
+			? `${(defaultPm.brand || "CARD").toUpperCase()} •••• ${defaultPm.last4} (${defaultPm.exp_month}/${defaultPm.exp_year})`
 			: `<span class="text-muted">${__("No default card")}</span>`;
+
+		// The Stripe Customer docname IS the cus_ id (autoname: field:stripe_customer_id),
+		// so the id itself is the shortest route to the doc where the trigger / cards
+		// are configured. get_form_link() keeps us off a hardcoded /desk vs /app prefix.
+		const doc_link = frappe.utils.get_form_link("Stripe Customer", rec.name);
+		const unmatched = rec.unmatched_flag
+			? ` <span class="badge badge-danger">${__("Unmatched")}</span>`
+			: "";
 
 		html += `
 			<div class="row" style="margin-bottom: 8px;">
 				<div class="col-xs-6">
-					${badge} <strong>${rec.company}</strong><br>
-					<small class="text-muted">${rec.stripe_customer_id}</small>
+					${badge} <strong>${frappe.utils.escape_html(rec.company || "")}</strong>${unmatched}<br>
+					<a href="${doc_link}" class="stripe-customer-link" data-name="${frappe.utils.escape_html(rec.name)}">
+						${frappe.utils.escape_html(rec.stripe_customer_id)}
+					</a>
 				</div>
 				<div class="col-xs-6">
-					${cardLine}
+					${cardLine}<br>
+					<small class="text-muted">${__("Charge trigger")}: ${_trigger_label(rec)}</small>
+					&nbsp;<a href="${doc_link}" class="stripe-customer-link" data-name="${frappe.utils.escape_html(rec.name)}">
+						<small>${__("Configure")}</small>
+					</a>
 				</div>
 			</div>`;
 	}
@@ -58,6 +72,14 @@ function _render_stripe_cards(frm, records) {
 	html += `</div>`;
 
 	frm.dashboard.add_section(html, __("Stripe"));
+
+	// Namespaced + rebound on every refresh so handlers never stack up.
+	$(frm.dashboard.wrapper)
+		.off("click.stripe_customer_link")
+		.on("click.stripe_customer_link", "a.stripe-customer-link", function (e) {
+			e.preventDefault();
+			frappe.set_route("Form", "Stripe Customer", $(this).data("name"));
+		});
 
 	// Action buttons
 	frm.add_custom_button(__("View Stripe Customer"), () => {
@@ -79,6 +101,17 @@ function _render_stripe_cards(frm, records) {
 			_process_pending_invoices(frm.doc.name, stripe_settings);
 		});
 	}, __("Stripe"));
+}
+
+function _trigger_label(rec) {
+	const override = rec.payment_trigger_override;
+	if (!override || override === "Use Company Default") {
+		return __("Company default");
+	}
+	if (override === "After X Days") {
+		return __("After {0} day(s)", [rec.payment_trigger_days_override || 0]);
+	}
+	return __(override);
 }
 
 function _with_settings_selection(records, callback) {
