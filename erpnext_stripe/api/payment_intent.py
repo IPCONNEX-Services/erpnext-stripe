@@ -193,9 +193,9 @@ def on_invoice_submit(doc, method):
     sc = get_stripe_customer(doc.customer, stripe_settings_name)
 
     if not sc or not sc.get_default_payment_method():
-        from erpnext_stripe.api.setup_intent import send_card_setup_email
+        from erpnext_stripe.api.setup_intent import send_card_setup_link
         try:
-            send_card_setup_email(doc.customer, stripe_settings_name)
+            send_card_setup_link(doc.customer, stripe_settings_name)
         except Exception:
             pass
         return
