@@ -67,7 +67,7 @@ def _handle_payment_succeeded(event: dict, stripe_settings: str):
     frappe.db.set_value("Stripe Payment Log", log.name, {
         "status": "succeeded",
         "payment_entry": pe_name,
-        "event_data": json.dumps(event),
+        "event_data": json.dumps(event.to_dict() if hasattr(event, "to_dict") else dict(event)),
     })
 
     frappe.get_doc("Sales Invoice", log.sales_invoice).add_comment(
@@ -107,7 +107,7 @@ def _handle_payment_failed(event: dict, stripe_settings: str):
             "status": "failed",
             "stripe_error_code": error_code,
             "stripe_error_message": error_message,
-            "event_data": json.dumps(event),
+            "event_data": json.dumps(event.to_dict() if hasattr(event, "to_dict") else dict(event)),
         })
         frappe.get_doc("Sales Invoice", log.sales_invoice).add_comment(
             "Comment",
