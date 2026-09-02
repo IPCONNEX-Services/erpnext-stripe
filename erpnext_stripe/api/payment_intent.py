@@ -43,7 +43,7 @@ def charge_invoice(sales_invoice: str, stripe_settings: str = None) -> dict:
     )
     attempt_number = (last_attempt.attempt_number + 1) if last_attempt else 1
 
-    amount_cents = int(invoice.outstanding_amount * 100)
+    amount_cents = round(invoice.outstanding_amount * 100)
     currency = (invoice.currency or "usd").lower()
 
     intent = stripe.PaymentIntent.create(
@@ -152,7 +152,7 @@ def create_payment_intent_for_portal(sales_invoice: str) -> dict:
     stripe = get_stripe_client(stripe_settings)
 
     intent = stripe.PaymentIntent.create(
-        amount=int(invoice.outstanding_amount * 100),
+        amount=round(invoice.outstanding_amount * 100),
         currency=(invoice.currency or "usd").lower(),
         customer=sc.stripe_customer_id,
         setup_future_usage="off_session",

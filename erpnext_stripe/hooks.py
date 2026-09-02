@@ -29,6 +29,12 @@ scheduler_events = {
 # Load Stripe.js only on pages that need it (portal card pages)
 web_include_js = []
 
+# Connections tab: surface Stripe Customer on the Customer form.
+# Chains with the other apps' Customer dashboard overrides (frappe applies every hook).
+override_doctype_dashboards = {
+    "Customer": "erpnext_stripe.customer_dashboard_overrides.add_stripe",
+}
+
 # DocType JS overrides for Customer form dashboard
 doctype_js = {
     "Customer": "public/js/customer_stripe_dashboard.js",
