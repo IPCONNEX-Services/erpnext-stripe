@@ -29,6 +29,11 @@ scheduler_events = {
 # Load Stripe.js only on pages that need it (portal card pages)
 web_include_js = []
 
+# Shared card-setup actions. Desk-wide because the Customer form needs them
+# before any Stripe Customer record exists (nothing to hang a doctype_js on).
+# Stripe.js itself is still fetched lazily, only when a dialog opens.
+app_include_js = ["/assets/erpnext_stripe/js/stripe_card_dialog.js"]
+
 # Connections tab: surface Stripe Customer on the Customer form.
 # Chains with the other apps' Customer dashboard overrides (frappe applies every hook).
 override_doctype_dashboards = {

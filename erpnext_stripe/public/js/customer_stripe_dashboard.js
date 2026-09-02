@@ -24,10 +24,50 @@ function _render_empty_state(frm) {
 	frm.dashboard.add_section(
 		`<div class="stripe-section">
 			<p class="text-muted">${__("No Stripe customer linked.")}</p>
+			<button class="btn btn-xs btn-default stripe-setup-add-card">
+				${__("Add Card")}
+			</button>
+			<button class="btn btn-xs btn-default stripe-setup-email-link">
+				${__("Email Setup Link")}
+			</button>
+			<p class="text-muted small mt-2">
+				${__("Either one creates the Stripe customer first — nothing exists on Stripe for this account yet.")}
+			</p>
 		</div>`,
 		__("Stripe")
 	);
 	frm.dashboard.add_indicator(__("No Stripe Customer"), "grey");
+
+	// Same two entry points as the toolbar, right where the empty state is —
+	// this is the only place a Customer with no Stripe record can start from.
+	_bind(frm, ".stripe-setup-add-card", () => _setup_then_add_card(frm));
+	_bind(frm, ".stripe-setup-email-link", () => _setup_then_email_link(frm));
+
+	frm.add_custom_button(__("Add Card"), () => _setup_then_add_card(frm), __("Stripe"));
+	frm.add_custom_button(__("Email Setup Link"), () => _setup_then_email_link(frm), __("Stripe"));
+}
+
+function _bind(frm, selector, handler) {
+	const ns = "click.stripe_setup";
+	$(frm.dashboard.wrapper)
+		.off(ns, selector)
+		.on(ns, selector, (e) => {
+			e.preventDefault();
+			handler();
+		});
+}
+
+function _setup_then_add_card(frm) {
+	erpnext_stripe.with_stripe_customer(frm.doc.name, (stripe_customer) => {
+		erpnext_stripe.add_card(stripe_customer, () => frm.refresh());
+	});
+}
+
+function _setup_then_email_link(frm) {
+	erpnext_stripe.with_stripe_customer(frm.doc.name, (stripe_customer, result) => {
+		erpnext_stripe.email_setup_link(frm.doc.name, result.stripe_settings);
+		frm.refresh();
+	});
 }
 
 function _render_stripe_cards(frm, records) {
@@ -90,10 +130,20 @@ function _render_stripe_cards(frm, records) {
 		}
 	}, __("Stripe"));
 
-	frm.add_custom_button(__("Send Card Setup Link"), () => {
-		_with_settings_selection(records, (stripe_settings) => {
-			_send_card_setup_email(frm.doc.name, stripe_settings);
+	frm.add_custom_button(__("Add Card"), () => {
+		_with_record_selection(records, (rec) => {
+			erpnext_stripe.add_card(rec.name, () => frm.refresh());
 		});
+	}, __("Stripe"));
+
+	frm.add_custom_button(__("Email Setup Link"), () => {
+		_with_settings_selection(records, (stripe_settings) => {
+			erpnext_stripe.email_setup_link(frm.doc.name, stripe_settings);
+		});
+	}, __("Stripe"));
+
+	frm.add_custom_button(__("Copy Setup Link"), () => {
+		_with_record_selection(records, (rec) => erpnext_stripe.copy_setup_link(rec.name));
 	}, __("Stripe"));
 
 	frm.add_custom_button(__("Process Pending Invoices"), () => {
@@ -114,6 +164,25 @@ function _trigger_label(rec) {
 	return __(override);
 }
 
+function _with_record_selection(records, callback) {
+	if (records.length === 1) {
+		callback(records[0]);
+		return;
+	}
+	const label = (r) => `${r.stripe_settings} (${r.stripe_customer_id})`;
+	frappe.prompt(
+		[{
+			fieldname: "choice",
+			fieldtype: "Select",
+			label: __("Stripe Account"),
+			options: records.map(label).join("\n"),
+			reqd: 1,
+		}],
+		(v) => callback(records.find((r) => label(r) === v.choice)),
+		__("Select Stripe Account")
+	);
+}
+
 function _with_settings_selection(records, callback) {
 	const options = records.map((r) => r.stripe_settings);
 	if (options.length === 1) {
@@ -131,21 +200,6 @@ function _with_settings_selection(records, callback) {
 			__("Select Stripe Account")
 		);
 	}
-}
-
-function _send_card_setup_email(customer, stripe_settings) {
-	frappe.confirm(
-		__("Send a card setup email to this customer?"),
-		() => {
-			frappe.call({
-				method: "erpnext_stripe.api.setup_intent.send_card_setup_email",
-				args: { customer, stripe_settings },
-				callback() {
-					frappe.show_alert({ message: __("Card setup email sent"), indicator: "green" });
-				},
-			});
-		}
-	);
 }
 
 function _process_pending_invoices(customer, stripe_settings) {
