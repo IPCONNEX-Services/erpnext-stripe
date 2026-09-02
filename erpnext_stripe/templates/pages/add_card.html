@@ -33,6 +33,7 @@
 (function () {
 	const publishableKey = {{ publishable_key | tojson }};
 	const clientSecret = {{ client_secret | tojson }};
+	const token = {{ token | tojson }};
 
 	const stripe = Stripe(publishableKey);
 	const elements = stripe.elements({ clientSecret });
@@ -61,9 +62,33 @@
 			errorDiv.style.display = "block";
 			btn.disabled = false;
 			btn.textContent = "Save Card";
-		} else {
-			document.getElementById("stripe-element-container").style.display = "none";
-			document.getElementById("stripe-success").style.display = "block";
+			return;
+		}
+
+		document.getElementById("stripe-element-container").style.display = "none";
+		document.getElementById("stripe-success").style.display = "block";
+
+		// Pull the new card into ERPNext right away — otherwise the billing team
+		// only sees it after someone hits "Refresh Cards" on the Stripe Customer.
+		try {
+			await fetch(
+				"/api/method/erpnext_stripe.api.setup_intent.confirm_card_added",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						// Guests carry no CSRF token and Frappe skips the check for
+						// them; a logged-in staffer opening the link does need it.
+						"X-Frappe-CSRF-Token":
+							(window.frappe && window.frappe.csrf_token) || "",
+					},
+					body: JSON.stringify({ token: token }),
+				}
+			);
+		} catch (e) {
+			// The card is already saved at Stripe; the reconciler / next sync
+			// will pick it up. Never show this to the customer.
+			console.error(e);
 		}
 	});
 })();

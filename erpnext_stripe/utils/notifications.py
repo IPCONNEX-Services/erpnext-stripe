@@ -35,19 +35,64 @@ def send_customer_failure_email(customer: str, sales_invoice: str, attempt_numbe
     )
 
 
-def send_card_setup_email(customer: str, setup_url: str):
-    """Send an email inviting the customer to add their card."""
-    contact_email = _get_customer_email(customer)
-    if not contact_email:
+def send_card_setup_email(customer: str, setup_url: str) -> list[str]:
+    """Email the customer a link to add their own card. Returns the recipients.
+
+    Routed to the billing-flagged Contacts when this site has ipconnex_telecom's
+    recipient resolver (billing mail must not land on a random contact), falling
+    back to the customer's own email otherwise. The send is logged as a
+    Communication on the Customer so the timeline shows who was invited and when.
+    """
+    recipients = _get_billing_recipients(customer)
+    if not recipients:
         frappe.throw(f"No email found for customer '{customer}'")
 
-    frappe.sendmail(
-        recipients=[contact_email],
-        subject="Add your payment card",
-        template="stripe_card_setup_invite",
-        args={"customer": customer, "setup_url": setup_url},
-        now=False,
+    subject = "Add your payment card"
+    message = frappe.render_template(
+        "erpnext_stripe/templates/emails/stripe_card_setup_invite.html",
+        {"customer": customer, "setup_url": setup_url},
     )
+
+    comm = frappe.get_doc({
+        "doctype": "Communication",
+        "communication_type": "Communication",
+        "communication_medium": "Email",
+        "sent_or_received": "Sent",
+        "subject": subject,
+        "content": message,
+        "recipients": ", ".join(recipients),
+        "reference_doctype": "Customer",
+        "reference_name": customer,
+        "status": "Linked",
+    })
+    comm.insert(ignore_permissions=True)
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=message,
+        now=True,
+        reference_doctype="Customer",
+        reference_name=customer,
+        communication=comm.name,
+    )
+    return recipients
+
+
+def _get_billing_recipients(customer: str) -> list[str]:
+    """Billing-tagged contacts when ipconnex_telecom is installed, else the
+    customer's primary email. erpnext_stripe must keep working without it."""
+    try:
+        from ipconnex_telecom.utils.billing_recipients import get_billing_recipients
+
+        recipients = get_billing_recipients(customer, prefer_billing=True)
+        if recipients:
+            return recipients
+    except ImportError:
+        pass
+
+    email = _get_customer_email(customer)
+    return [email] if email else []
 
 
 def _get_customer_email(customer: str) -> str | None:

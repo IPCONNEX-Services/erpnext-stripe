@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 
 @frappe.whitelist()
@@ -127,6 +128,8 @@ def _upsert_stripe_customer(stripe_cus, erpnext_customer: str | None, stripe_set
     else:
         doc.insert(ignore_permissions=True)
 
+    return doc.name
+
 
 @frappe.whitelist()
 def get_customer_stripe_summary(customer: str) -> dict:
@@ -163,3 +166,92 @@ def get_customer_stripe_summary(customer: str) -> dict:
         })
 
     return result
+
+
+@frappe.whitelist()
+def get_stripe_account_options() -> list:
+    """Stripe Settings a card can be set up against - default account first."""
+    return frappe.get_all(
+        "Stripe Settings",
+        fields=["name", "company", "mode", "is_default"],
+        order_by="is_default desc, mode asc, name asc",
+    )
+
+
+@frappe.whitelist()
+def ensure_stripe_customer(customer: str, stripe_settings: str = None) -> dict:
+    """Return a Stripe Customer for this ERPNext customer, creating one if needed.
+
+    Lets the billing team start from a Customer that has never touched Stripe:
+    the desk calls this, then opens the card dialog or emails a setup link
+    against whatever comes back.
+
+    An existing Stripe-side customer on the same email is adopted rather than
+    duplicated, unless another ERPNext customer already claims it.
+    """
+    from erpnext_stripe.utils.stripe_client import get_stripe_client
+
+    if not frappe.has_permission("Stripe Customer", "create"):
+        frappe.throw(_("Not permitted to set up Stripe for this customer."), frappe.PermissionError)
+
+    stripe_settings = stripe_settings or _default_stripe_settings()
+
+    existing = frappe.db.get_value(
+        "Stripe Customer", {"customer": customer, "stripe_settings": stripe_settings}, "name"
+    )
+    if existing:
+        return {"stripe_customer": existing, "status": "existing", "stripe_settings": stripe_settings}
+
+    cust = frappe.db.get_value("Customer", customer, ["customer_name", "email_id"], as_dict=True)
+    if not cust:
+        frappe.throw(_("Customer {0} not found.").format(customer))
+
+    stripe = get_stripe_client(stripe_settings)
+    email = cust.email_id or _primary_contact_email(customer)
+
+    stripe_cus = _find_adoptable_stripe_customer(stripe, email) if email else None
+    status = "adopted"
+
+    if not stripe_cus:
+        stripe_cus = stripe.Customer.create(
+            name=cust.customer_name or customer,
+            email=email or None,
+            metadata={"erpnext_customer": customer},
+        )
+        status = "created"
+
+    name = _upsert_stripe_customer(stripe_cus, customer, stripe_settings, stripe)
+    frappe.db.commit()
+    return {"stripe_customer": name, "status": status, "stripe_settings": stripe_settings}
+
+
+def _default_stripe_settings() -> str:
+    options = get_stripe_account_options()
+    if not options:
+        frappe.throw(_("No Stripe Settings configured."))
+    default = [o for o in options if o.is_default]
+    if default:
+        return default[0].name
+    if len(options) == 1:
+        return options[0].name
+    frappe.throw(_("More than one Stripe account and none marked default - pick the account to use."))
+
+
+def _primary_contact_email(customer: str) -> str | None:
+    return frappe.db.get_value(
+        "Contact",
+        {"link_doctype": "Customer", "link_name": customer, "is_primary_contact": 1},
+        "email_id",
+    )
+
+
+def _find_adoptable_stripe_customer(stripe, email: str):
+    """An existing Stripe customer on this email, unless another ERPNext customer
+    already claims it - two ERPNext records must never share one Stripe id."""
+    for candidate in stripe.Customer.list(email=email, limit=10).data:
+        claimed_by = frappe.db.get_value(
+            "Stripe Customer", {"stripe_customer_id": candidate.id}, "customer"
+        )
+        if not claimed_by:
+            return candidate
+    return None
